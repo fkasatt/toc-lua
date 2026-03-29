@@ -16,10 +16,12 @@ function M.setup_autocmds()
 	vim.api.nvim_create_autocmd("VimResized", {
 		group = vim.api.nvim_create_augroup("toc_vim_resized", { clear = true }),
 		callback = function()
-			if not session.get() then
+			local s = session.get()
+			if not s then
 				return true
 			end
 			session.adjust_toc_width()
+			session.adjust_chart_height()
 		end,
 	})
 
@@ -109,6 +111,17 @@ function M.setup_autocmds()
 		buffer = S.toc_buf,
 		callback = function()
 			local t0 = vim.uv.hrtime()
+			local s = session.get()
+			-- suppress_scroll フラグが立っている間はソースジャンプをスキップする
+			-- ToC 起動直後の初回 CursorMoved で発火するが、ユーザー操作ではないため抑制する
+			if s and s.suppress_scroll then
+				s.suppress_scroll = false
+				local entry, _, idx = session.entry_at_cursor()
+				if entry then
+					session.update_chart_current(idx)
+				end
+				return
+			end
 			local entry, _, idx = session.entry_at_cursor()
 			if not entry then
 				return
@@ -116,7 +129,6 @@ function M.setup_autocmds()
 			session.update_chart_current(idx)
 			local win = session.find_src_win()
 			if win then
-				local s = session.get()
 				local target = entry.src_buf or s.src_buf
 				if vim.api.nvim_win_get_buf(win) ~= target then
 					s.src_buf = target

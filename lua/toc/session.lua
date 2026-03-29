@@ -317,6 +317,59 @@ end
 -- 幅調整
 -- ============================================================
 
+--- ターミナルリサイズ時に棒グラフの高さを再計算し、ウィンドウを調整する
+--- 端末高さ 24 行未満になった場合、または L1/L2 が 14 以上で高さ 7 行未満になった場合は
+--- 棒グラフウィンドウを閉じる
+function M.adjust_chart_height()
+	if not S then
+		return
+	end
+
+	-- 棒グラフが存在しない場合は何もしない
+	if not S.chart_win or not vim.api.nvim_win_is_valid(S.chart_win) then
+		return
+	end
+
+	local cfg = config.options
+	local win_width = vim.api.nvim_win_get_width(S.toc_win)
+
+	-- 端末高さまたは幅が不足したら棒グラフを閉じる
+	if vim.o.lines < 24 or win_width < cfg.toc_max_width - 2 then
+		vim.api.nvim_win_close(S.chart_win, false)
+		S.chart_win = nil
+		S.chart_buf = nil
+		return
+	end
+
+	-- ターミナル高さから新しい bar_height を計算する
+	local new_height = math.max(7, math.min(16, math.floor(vim.o.lines * 0.35)))
+
+	-- L1/L2 タイトル行が 14 以上なら縮小する
+	local l1l2_count = 0
+	for _, e in ipairs(S.entries) do
+		if e.level == 1 or e.level == 2 then
+			l1l2_count = l1l2_count + 1
+		end
+	end
+	if l1l2_count >= 14 then
+		local reduced = math.floor(vim.o.lines * 0.2)
+		new_height = math.min(new_height, reduced)
+		if new_height < 7 then
+			vim.api.nvim_win_close(S.chart_win, false)
+			S.chart_win = nil
+			S.chart_buf = nil
+			S.bar_height = nil
+			return
+		end
+	end
+
+	S.bar_height = new_height
+	vim.wo[S.chart_win].winfixheight = false
+	vim.api.nvim_win_set_height(S.chart_win, S.bar_height + 2)
+	vim.wo[S.chart_win].winfixheight = true
+	M.refresh_chart()
+end
+
 --- ソース幅を src_min_width 以上に保つよう ToC 列幅を調整する
 --- VimResized イベント時や初期化時に呼ばれる
 function M.adjust_toc_width()

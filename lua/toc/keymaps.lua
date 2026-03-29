@@ -195,19 +195,17 @@ function M.setup_keymaps()
 		vim.api.nvim_win_set_height(S.chart_win, S.bar_height + 2)
 		vim.wo[S.chart_win].winfixheight = true
 		session.refresh_chart()
-		vim.notify(string.format("ToC: 棒グラフ高さ %d 行", S.bar_height), vim.log.levels.INFO)
 	end
 
 	local function on_bar_height_dec()
 		if not S.chart_win or not vim.api.nvim_win_is_valid(S.chart_win) then
 			return
 		end
-		S.bar_height = math.max(S.bar_height - 1, 3)
+		S.bar_height = math.max(S.bar_height - 1, 7)
 		vim.wo[S.chart_win].winfixheight = false
 		vim.api.nvim_win_set_height(S.chart_win, S.bar_height + 2)
 		vim.wo[S.chart_win].winfixheight = true
 		session.refresh_chart()
-		vim.notify(string.format("ToC: 棒グラフ高さ %d 行", S.bar_height), vim.log.levels.INFO)
 	end
 
 	for _, b in ipairs(shared_bufs) do
@@ -229,6 +227,7 @@ function M.setup_keymaps()
 			"  R     内容リフレッシュ",
 			"  @N    ToC幅指定（全角N文字 / +N増 / -N減）",
 			"  #N    ソース幅指定（全角N文字 / +N増 / -N減）",
+			"  +/-   棒グラフ高さ増減",
 			"  q     閉じる",
 			"  ?     このヘルプ",
 		}

@@ -123,7 +123,10 @@ function M.open(opts)
 	autocmds.setup_autocmds()
 
 	-- ソースのカーソル位置に対応する ToCエントリにカーソルを合わせる
+	-- suppress_scroll: 初回の CursorMoved によるソースジャンプを抑制する
+	-- ユーザーが ToC で明示的にカーソルを動かすまでソース位置を維持する
 	local s = session.get()
+	s.suppress_scroll = true
 	local src_lnum = vim.api.nvim_win_get_cursor(src_win)[1]
 	local best_idx = 1
 	for i, e in ipairs(s.entries) do

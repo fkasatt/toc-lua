@@ -480,7 +480,8 @@ describe("ToC module", function()
 				-- ToCの1行目（第1章）に移動
 				vim.api.nvim_set_current_win(toc_win)
 				vim.api.nvim_win_set_cursor(toc_win, { 1, 0 })
-				-- CursorMoved autocmd を明示的に発火
+				-- 初回 CursorMoved は suppress_scroll で抑制されるため 2 回発火する
+				vim.api.nvim_exec_autocmds("CursorMoved", { buffer = toc_buf })
 				vim.api.nvim_exec_autocmds("CursorMoved", { buffer = toc_buf })
 
 				-- ソースウィンドウのバッファが chapter1.typ に変わっている
