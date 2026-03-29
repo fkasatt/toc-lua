@@ -317,50 +317,80 @@ end
 -- 幅調整
 -- ============================================================
 
---- ターミナルリサイズ時に棒グラフの高さを再計算し、ウィンドウを調整する
---- 端末高さ 24 行未満になった場合、または L1/L2 が 14 以上で高さ 7 行未満になった場合は
---- 棒グラフウィンドウを閉じる
-function M.adjust_chart_height()
-	if not S then
-		return
+--- エントリリスト内の L1/L2 タイトル数を返す
+---@return integer
+function M.count_l1l2()
+	local count = 0
+	for _, e in ipairs(S.entries) do
+		if e.level == 1 or e.level == 2 then
+			count = count + 1
+		end
 	end
+	return count
+end
 
-	-- 棒グラフが存在しない場合は何もしない
-	if not S.chart_win or not vim.api.nvim_win_is_valid(S.chart_win) then
+--- 端末サイズとエントリ数から適切な bar_height を計算する
+--- 条件を満たさない場合は nil を返す（棒グラフ非表示）
+---@return integer|nil
+function M.calc_bar_height()
+	local new_height = math.max(7, math.min(16, math.floor(vim.o.lines * 0.35)))
+	if M.count_l1l2() >= 14 then
+		new_height = math.min(new_height, math.floor(vim.o.lines * 0.2))
+		if new_height < 7 then
+			return nil
+		end
+	end
+	return new_height
+end
+
+--- ターミナルリサイズ時に棒グラフの高さを再計算し、ウィンドウを調整する
+--- 条件を満たさなくなった場合は閉じ、再び満たした場合は復活させる
+function M.adjust_chart_height()
+	if not S or not vim.api.nvim_win_is_valid(S.toc_win) then
 		return
 	end
 
 	local cfg = config.options
 	local win_width = vim.api.nvim_win_get_width(S.toc_win)
+	local has_chart = S.chart_win and vim.api.nvim_win_is_valid(S.chart_win)
 
-	-- 端末高さまたは幅が不足したら棒グラフを閉じる
+	-- 端末高さまたは幅が不足 → 棒グラフを閉じる
 	if vim.o.lines < 24 or win_width < cfg.toc_max_width - 2 then
-		vim.api.nvim_win_close(S.chart_win, false)
-		S.chart_win = nil
-		S.chart_buf = nil
+		if has_chart then
+			vim.api.nvim_win_close(S.chart_win, false)
+			S.chart_win = nil
+			S.chart_buf = nil
+		end
 		return
 	end
 
-	-- ターミナル高さから新しい bar_height を計算する
-	local new_height = math.max(7, math.min(16, math.floor(vim.o.lines * 0.35)))
+	local new_height = M.calc_bar_height()
 
-	-- L1/L2 タイトル行が 14 以上なら縮小する
-	local l1l2_count = 0
-	for _, e in ipairs(S.entries) do
-		if e.level == 1 or e.level == 2 then
-			l1l2_count = l1l2_count + 1
-		end
-	end
-	if l1l2_count >= 14 then
-		local reduced = math.floor(vim.o.lines * 0.2)
-		new_height = math.min(new_height, reduced)
-		if new_height < 7 then
+	if not new_height then
+		-- L1/L2 多すぎで非表示
+		if has_chart then
 			vim.api.nvim_win_close(S.chart_win, false)
 			S.chart_win = nil
 			S.chart_buf = nil
 			S.bar_height = nil
-			return
 		end
+		return
+	end
+
+	if not has_chart then
+		-- 条件を満たしたので棒グラフを復活させる
+		S.bar_height = new_height
+		require("toc.layout").create_chart_layout()
+		if S.chart_buf then
+			M.refresh_chart()
+			S.needs_hscroll = S.total_bars >= 30
+		end
+		return
+	end
+
+	-- 高さが変わらなければ何もしない
+	if new_height == S.bar_height then
+		return
 	end
 
 	S.bar_height = new_height
