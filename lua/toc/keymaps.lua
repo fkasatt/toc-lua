@@ -185,12 +185,39 @@ function M.setup_keymaps()
 		shared_bufs[#shared_bufs + 1] = S.chart_buf
 	end
 
+	-- + / - : 棒グラフの高さを 1 行ずつ増減する（chart_win がある場合のみ有効）
+	local function on_bar_height_inc()
+		if not S.chart_win or not vim.api.nvim_win_is_valid(S.chart_win) then
+			return
+		end
+		S.bar_height = math.min(S.bar_height + 1, 30)
+		vim.wo[S.chart_win].winfixheight = false
+		vim.api.nvim_win_set_height(S.chart_win, S.bar_height + 2)
+		vim.wo[S.chart_win].winfixheight = true
+		session.refresh_chart()
+		vim.notify(string.format("ToC: 棒グラフ高さ %d 行", S.bar_height), vim.log.levels.INFO)
+	end
+
+	local function on_bar_height_dec()
+		if not S.chart_win or not vim.api.nvim_win_is_valid(S.chart_win) then
+			return
+		end
+		S.bar_height = math.max(S.bar_height - 1, 3)
+		vim.wo[S.chart_win].winfixheight = false
+		vim.api.nvim_win_set_height(S.chart_win, S.bar_height + 2)
+		vim.wo[S.chart_win].winfixheight = true
+		session.refresh_chart()
+		vim.notify(string.format("ToC: 棒グラフ高さ %d 行", S.bar_height), vim.log.levels.INFO)
+	end
+
 	for _, b in ipairs(shared_bufs) do
 		vim.keymap.set("n", "q", function()
 			session.close()
 		end, { buffer = b, desc = "ToC: 閉じる" })
 		vim.keymap.set("n", "@", on_resize_toc, { buffer = b, desc = "ToC: 幅指定" })
 		vim.keymap.set("n", "#", on_resize_src, { buffer = b, desc = "ToC: ソース幅指定" })
+		vim.keymap.set("n", "+", on_bar_height_inc, { buffer = b, desc = "ToC: 棒グラフ高さ増加" })
+		vim.keymap.set("n", "-", on_bar_height_dec, { buffer = b, desc = "ToC: 棒グラフ高さ減少" })
 	end
 
 	-- ?: ヘルプ表示

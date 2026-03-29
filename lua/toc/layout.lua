@@ -66,27 +66,31 @@ end
 --- 棒グラフバッファ・ウィンドウを toc_win の下に作成する
 ---
 --- 棒グラフを表示する条件:
----   1. ルート + インクルードファイルの合計行数が 32 行以上であること
----      （少ない文書ではグラフが意味をなさないため）
+---   1. ターミナルウィンドウの高さが 32 行以上であること
+---      （短い端末では棒グラフのスペースが確保できないため）
 ---   2. ToCウィンドウ幅が toc_max_width - 2 以上であること
 ---      （狭すぎるとグラフが潰れて読めないため）
+---
+--- bar_height の自動計算:
+---   ターミナル行数の 20% を棒グラフに割り当て、最小 5 行・最大 16 行とする。
+---   S.bar_height に格納し、+ / - キーで実行中に変更できる。
 function M.create_chart_layout()
 	local S = session.get()
 	local cfg = config.options
 
 	local win_width = vim.api.nvim_win_get_width(S.toc_win)
-	-- ルート + インクルードファイルの合計行数で棒グラフ表示を判定する
-	local total_line_count = vim.api.nvim_buf_line_count(S.root_buf)
-	if S.included_bufs then
-		for b, _ in pairs(S.included_bufs) do
-			if vim.api.nvim_buf_is_valid(b) then
-				total_line_count = total_line_count + vim.api.nvim_buf_line_count(b)
-			end
-		end
-	end
-	if total_line_count < 32 or win_width < cfg.toc_max_width - 2 then
+	-- 条件1: ターミナル高さ 32 行未満では表示しない
+	-- 条件2: ToC 幅が不足していれば表示しない
+	if vim.o.lines < 32 or win_width < cfg.toc_max_width - 2 then
 		return
 	end
+
+	-- ターミナル高さに応じて bar_height を自動計算する（未設定時のみ）
+	-- ターミナル行数の 20% を割り当て、最小 5・最大 16 行に収める
+	if not S.bar_height then
+		S.bar_height = math.max(5, math.min(16, math.floor(vim.o.lines * 0.2)))
+	end
+	local chart_win_height = S.bar_height + 2 -- bar 行 + ラベル行 + パーセント行
 
 	S.chart_buf = vim.api.nvim_create_buf(false, true)
 	vim.bo[S.chart_buf].buftype = "nofile"
@@ -96,7 +100,7 @@ function M.create_chart_layout()
 	vim.cmd("belowright split")
 	S.chart_win = vim.api.nvim_get_current_win()
 	vim.api.nvim_win_set_buf(S.chart_win, S.chart_buf)
-	vim.api.nvim_win_set_height(S.chart_win, cfg.chart_win_height)
+	vim.api.nvim_win_set_height(S.chart_win, chart_win_height)
 
 	util.setup_win_opts(S.chart_win)
 	vim.wo[S.chart_win].cursorline = false

@@ -197,7 +197,8 @@ function M.refresh_chart()
 		return
 	end
 
-	local chart_lines, chart_hls, total_bars, entry_to_bar, bar_entries = renderer.render_bar_chart(S.entries)
+	local chart_lines, chart_hls, total_bars, entry_to_bar, bar_entries =
+		renderer.render_bar_chart(S.entries, S.bar_height)
 	if #chart_lines == 0 then
 		return
 	end

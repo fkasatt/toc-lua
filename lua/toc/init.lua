@@ -18,14 +18,21 @@ function M.setup(opts)
 	require("toc.config").setup(opts)
 end
 
---- ToC ウィンドウを開く
---- 同一ルートバッファのセッションが既に有効な場合は ToC ウィンドウにフォーカスするだけ
+--- ToC ウィンドウを開く（トグル）
+--- セッションが既に有効な場合は閉じる。なければ開く。
 ---@param opts table|nil
 ---   - width (integer) ToC 列の初期幅（省略時は toc_max_width に従う）
 function M.open(opts)
 	opts = opts or {}
 
 	local session = require("toc.session")
+
+	-- トグル: ToC が既に開いていれば閉じて終了
+	local existing = session.get()
+	if existing and existing.toc_win and vim.api.nvim_win_is_valid(existing.toc_win) then
+		session.close()
+		return
+	end
 	local config = require("toc.config")
 	local highlight = require("toc.highlight")
 	local parser = require("toc.parser")
@@ -70,13 +77,8 @@ function M.open(opts)
 		include_to_root[b] = root_buf
 	end
 
-	-- 既存セッションが同一ルートバッファで有効ならフォーカスのみ
-	local S = session.get()
-	if S and S.root_buf == root_buf and S.toc_win and vim.api.nvim_win_is_valid(S.toc_win) then
-		vim.api.nvim_set_current_win(S.toc_win)
-		return
-	end
-	if S then
+	-- 既存セッションが残っていれば先に閉じる（異なるroot_bufへの切り替え等）
+	if session.get() then
 		session.close()
 	end
 
@@ -104,6 +106,7 @@ function M.open(opts)
 		pad_buf = nil,
 		needs_hscroll = false,
 		toc_width = 0, -- @ キーで管理する希望幅（0 = 未初期化）
+		bar_height = nil, -- 棒グラフ高さ（nil = create_chart_layout が端末高さから自動設定）
 	})
 
 	layout.create_toc_layout(opts, #entries)

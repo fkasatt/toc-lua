@@ -164,15 +164,16 @@ end
 ---
 --- 描画条件（create_chart_layout での呼び出し前提）:
 ---   - bar_entries が空でないこと（全 char_count = 0 の場合も空を返す）
----   - 実際の表示可否は create_chart_layout の条件（行数 >= 32, 幅 >= toc_max_width - 2）で制御する
+---   - 実際の表示可否は create_chart_layout の条件（端末高さ >= 32, 幅 >= toc_max_width - 2）で制御する
 ---
 ---@param entries table[]
+---@param bar_height integer|nil セッション固有の棒グラフ高さ（nil = config デフォルト）
 ---@return string[] chart_lines
 ---@return table[] chart_hls {line_idx, group, col_start, col_end, bar_col?}
 ---@return integer total_bars
 ---@return table<integer, integer> entry_to_bar
 ---@return table[] bar_entries
-function M.render_bar_chart(entries)
+function M.render_bar_chart(entries, bar_height)
 	local cfg = config.options
 	local bar_entries = collect_bar_entries(entries)
 	if #bar_entries == 0 then
@@ -189,7 +190,7 @@ function M.render_bar_chart(entries)
 		return {}, {}, 0, {}, {}
 	end
 
-	local bar_height = cfg.bar_height
+	local bar_height = bar_height or cfg.bar_height
 	local bar_col_width = cfg.bar_col_width
 	local braille = config.braille
 	local braille_empty = config.braille_empty
