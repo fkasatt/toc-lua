@@ -66,7 +66,7 @@ end
 --- 棒グラフバッファ・ウィンドウを toc_win の下に作成する
 ---
 --- 棒グラフを表示する条件:
----   1. ターミナルウィンドウの高さが 32 行以上であること
+---   1. ターミナルウィンドウの高さが 24 行以上であること
 ---      （短い端末では棒グラフのスペースが確保できないため）
 ---   2. ToCウィンドウ幅が toc_max_width - 2 以上であること
 ---      （狭すぎるとグラフが潰れて読めないため）
@@ -79,16 +79,16 @@ function M.create_chart_layout()
 	local cfg = config.options
 
 	local win_width = vim.api.nvim_win_get_width(S.toc_win)
-	-- 条件1: ターミナル高さ 32 行未満では表示しない
+	-- 条件1: ターミナル高さ 24 行未満では表示しない
 	-- 条件2: ToC 幅が不足していれば表示しない
-	if vim.o.lines < 32 or win_width < cfg.toc_max_width - 2 then
+	if vim.o.lines < 24 or win_width < cfg.toc_max_width - 2 then
 		return
 	end
 
 	-- ターミナル高さに応じて bar_height を自動計算する（未設定時のみ）
-	-- ターミナル行数の 20% を割り当て、最小 5・最大 16 行に収める
+	-- ターミナル行数の 35% を割り当て、最小 5・最大 16 行に収める
 	if not S.bar_height then
-		S.bar_height = math.max(5, math.min(16, math.floor(vim.o.lines * 0.2)))
+		S.bar_height = math.max(6, math.min(16, math.floor(vim.o.lines * 0.35)))
 	end
 	local chart_win_height = S.bar_height + 2 -- bar 行 + ラベル行 + パーセント行
 
