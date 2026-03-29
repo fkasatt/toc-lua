@@ -54,6 +54,9 @@ function M.setup_autocmds()
 				if not vim.api.nvim_win_is_valid(s.title_win) then
 					return true
 				end
+				if not vim.api.nvim_win_is_valid(s.toc_win) then
+					return true
+				end
 				if vim.api.nvim_get_current_win() ~= s.title_win then
 					return
 				end
@@ -82,6 +85,9 @@ function M.setup_autocmds()
 					return true
 				end
 				if not vim.api.nvim_win_is_valid(s.title_win) then
+					return true
+				end
+				if not vim.api.nvim_win_is_valid(s.toc_win) then
 					return true
 				end
 				if vim.api.nvim_get_current_win() ~= s.title_win then
